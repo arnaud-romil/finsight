@@ -9,4 +9,9 @@ class FinsightApplicationTests {
     @Test
     void contextLoads() {
     }
+
+    @Test
+    void failingTest() {
+        assertTrue(false);
+    }
 }
