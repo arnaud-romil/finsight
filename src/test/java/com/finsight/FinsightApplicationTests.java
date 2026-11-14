@@ -36,8 +36,8 @@ class FinsightApplicationTests {
     @Test
     void connectsToDatabaseAndExecutesQuery() throws SQLException {
         try (Connection connection = dataSource.getConnection();
-             Statement statement = connection.createStatement();
-             ResultSet resultSet = statement.executeQuery("SELECT 1")) {
+                Statement statement = connection.createStatement();
+                ResultSet resultSet = statement.executeQuery("SELECT 1")) {
             assertTrue(connection.isValid(1));
             assertTrue(resultSet.next());
             assertEquals(1, resultSet.getInt(1));
@@ -52,6 +52,15 @@ class FinsightApplicationTests {
                 Integer.class);
 
         assertEquals(1, tableCount);
+    }
+
+    @Test
+    void flywayInsertsSevenInitialSymbols() {
+        Integer symbolCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM symbol",
+                Integer.class);
+
+        assertEquals(7, symbolCount);
     }
 
     @Test
