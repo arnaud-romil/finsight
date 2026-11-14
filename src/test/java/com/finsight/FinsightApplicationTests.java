@@ -9,12 +9,18 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.testcontainers.containers.PostgreSQLContainer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
+@Import(FinsightApplicationTests.TestcontainersConfiguration.class)
 class FinsightApplicationTests {
 
     @Autowired
@@ -56,5 +62,15 @@ class FinsightApplicationTests {
                 Integer.class);
 
         assertEquals(1, migrationCount);
+    }
+
+    @TestConfiguration(proxyBeanMethods = false)
+    static class TestcontainersConfiguration {
+
+        @Bean
+        @ServiceConnection
+        PostgreSQLContainer<?> postgresContainer() {
+            return new PostgreSQLContainer<>("postgres:17-alpine");
+        }
     }
 }
