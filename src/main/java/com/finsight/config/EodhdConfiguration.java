@@ -1,6 +1,7 @@
 package com.finsight.config;
 
 import com.finsight.client.EodhdClient;
+import java.time.Clock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +23,11 @@ public class EodhdConfiguration {
                 .baseUrl(baseUrl)
                 .defaultHeader("Accept", "application/json")
                 .build();
+    }
+
+    @Bean
+    public Clock clock() {
+        return Clock.systemDefaultZone();
     }
 
     @Bean
