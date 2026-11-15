@@ -1,5 +1,6 @@
 package com.finsight;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -7,6 +8,7 @@ import java.sql.Statement;
 import javax.sql.DataSource;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -71,6 +73,129 @@ class FinsightApplicationTests {
                 Integer.class);
 
         assertEquals(1, migrationCount);
+    }
+
+    @Test
+    void flywayCreatesSymbolPriceTable() {
+        Integer tableCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES "
+                        + "WHERE TABLE_SCHEMA = CURRENT_SCHEMA() AND LOWER(TABLE_NAME) = 'symbol_price'",
+                Integer.class);
+
+        assertEquals(1, tableCount);
+    }
+
+    @Test
+    void flywayCreatesExpectedSymbolPriceColumns() {
+        Integer columnCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS "
+                        + "WHERE TABLE_SCHEMA = CURRENT_SCHEMA() AND LOWER(TABLE_NAME) = 'symbol_price'",
+                Integer.class);
+
+        assertEquals(9, columnCount);
+    }
+
+    @Test
+    void insertsPriceForExistingSymbolAndPreservesNumericPrecision() {
+        jdbcTemplate.update(
+                "INSERT INTO symbol_price (symbol_id, price_date, open, high, low, close, adjusted_close, volume) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                1L,
+                java.sql.Date.valueOf("2026-10-01"),
+                new BigDecimal("146.32000000"),
+                new BigDecimal("146.85000000"),
+                new BigDecimal("145.59000000"),
+                new BigDecimal("146.57000000"),
+                new BigDecimal("146.57000000"),
+                17360L);
+
+        BigDecimal storedOpen = jdbcTemplate.queryForObject(
+                "SELECT open FROM symbol_price WHERE symbol_id = 1 AND price_date = ?",
+                BigDecimal.class,
+                java.sql.Date.valueOf("2026-10-01"));
+
+        assertEquals(new BigDecimal("146.32000000"), storedOpen);
+    }
+
+    @Test
+    void rejectsPriceForNonExistingSymbol() {
+        DataIntegrityViolationException exception = org.junit.jupiter.api.Assertions.assertThrows(
+                DataIntegrityViolationException.class,
+                () -> jdbcTemplate.update(
+                        "INSERT INTO symbol_price (symbol_id, price_date, open, high, low, close, adjusted_close, volume) "
+                                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        999L,
+                        java.sql.Date.valueOf("2026-10-02"),
+                        new BigDecimal("10.00"),
+                        new BigDecimal("11.00"),
+                        new BigDecimal("9.00"),
+                        new BigDecimal("10.50"),
+                        new BigDecimal("10.50"),
+                        1000L));
+
+        assertTrue(exception.getMessage() != null && !exception.getMessage().isBlank());
+    }
+
+    @Test
+    void rejectsDuplicatePriceForSameSymbolAndDate() {
+        jdbcTemplate.update(
+                "INSERT INTO symbol_price (symbol_id, price_date, open, high, low, close, adjusted_close, volume) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                1L,
+                java.sql.Date.valueOf("2026-10-03"),
+                new BigDecimal("100.00"),
+                new BigDecimal("105.00"),
+                new BigDecimal("99.00"),
+                new BigDecimal("103.00"),
+                new BigDecimal("103.00"),
+                5000L);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                DataIntegrityViolationException.class,
+                () -> jdbcTemplate.update(
+                        "INSERT INTO symbol_price (symbol_id, price_date, open, high, low, close, adjusted_close, volume) "
+                                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                        1L,
+                        java.sql.Date.valueOf("2026-10-03"),
+                        new BigDecimal("101.00"),
+                        new BigDecimal("106.00"),
+                        new BigDecimal("100.00"),
+                        new BigDecimal("104.00"),
+                        new BigDecimal("104.00"),
+                        6000L));
+    }
+
+    @Test
+    void allowsMultipleDatesForSameSymbol() {
+        jdbcTemplate.update(
+                "INSERT INTO symbol_price (symbol_id, price_date, open, high, low, close, adjusted_close, volume) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                1L,
+                java.sql.Date.valueOf("2026-10-04"),
+                new BigDecimal("101.00"),
+                new BigDecimal("106.00"),
+                new BigDecimal("100.00"),
+                new BigDecimal("104.00"),
+                new BigDecimal("104.00"),
+                6000L);
+
+        jdbcTemplate.update(
+                "INSERT INTO symbol_price (symbol_id, price_date, open, high, low, close, adjusted_close, volume) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                1L,
+                java.sql.Date.valueOf("2026-10-05"),
+                new BigDecimal("102.00"),
+                new BigDecimal("107.00"),
+                new BigDecimal("101.00"),
+                new BigDecimal("105.00"),
+                new BigDecimal("105.00"),
+                7000L);
+
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM symbol_price WHERE symbol_id = 1",
+                Integer.class);
+
+        assertEquals(2, count);
     }
 
     @TestConfiguration(proxyBeanMethods = false)
