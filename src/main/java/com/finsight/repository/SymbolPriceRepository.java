@@ -1,6 +1,12 @@
 package com.finsight.repository;
 
 import com.finsight.model.DailyPrice;
+import com.finsight.model.SymbolPrice;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -27,5 +33,42 @@ public class SymbolPriceRepository {
                 price.close(),
                 price.adjustedClose(),
                 price.volume());
+    }
+
+    public List<SymbolPrice> findBySymbolIdsAndDateBetween(List<Long> symbolIds, LocalDate startDate,
+            LocalDate endDate) {
+        if (symbolIds == null || symbolIds.isEmpty()) {
+            return List.of();
+        }
+
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("startDate and endDate must not be null");
+        }
+
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("startDate must be before or equal to endDate");
+        }
+
+        String placeholders = String.join(", ", Collections.nCopies(symbolIds.size(), "?"));
+        String sql = "SELECT sp.symbol_id, s.code AS symbol_code, sp.price_date, sp.adjusted_close "
+                + "FROM symbol_price sp "
+                + "JOIN symbol s ON s.id = sp.symbol_id "
+                + "WHERE sp.symbol_id IN (" + placeholders + ") "
+                + "AND sp.price_date BETWEEN ? AND ? "
+                + "ORDER BY sp.symbol_id ASC, sp.price_date ASC";
+
+        List<Object> params = new ArrayList<>();
+        params.addAll(symbolIds);
+        params.add(Date.valueOf(startDate));
+        params.add(Date.valueOf(endDate));
+
+        return jdbcTemplate.query(
+                sql,
+                (rs, rowNum) -> new SymbolPrice(
+                        rs.getLong("symbol_id"),
+                        rs.getString("symbol_code"),
+                        rs.getDate("price_date").toLocalDate(),
+                        rs.getBigDecimal("adjusted_close")),
+                params.toArray());
     }
 }
