@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import com.finsight.client.EodhdClient;
 import com.finsight.dto.EodhdDailyPriceResponse;
 import com.finsight.model.DailyPrice;
+import com.finsight.model.NormalizedPricePoint;
 import com.finsight.model.Symbol;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -63,5 +64,34 @@ class SymbolPriceServiceTest {
 
         assertThat(prices).isEmpty();
         verify(eodhdClient).getDailyPrices(symbol, from);
+    }
+
+    @Test
+    void calculateNormalizedPerformanceUsesFirstValidPriceAsReference() {
+        List<DailyPrice> prices = List.of(
+                new DailyPrice(LocalDate.of(2026, 10, 1), new BigDecimal("100.00"), new BigDecimal("100.50"),
+                        new BigDecimal("99.50"),
+                        new BigDecimal("100.00"), new BigDecimal("100.00"), 1000L),
+                new DailyPrice(LocalDate.of(2026, 10, 2), new BigDecimal("101.00"), new BigDecimal("101.50"),
+                        new BigDecimal("100.00"),
+                        new BigDecimal("101.25"), new BigDecimal("101.25"), 1100L),
+                new DailyPrice(LocalDate.of(2026, 10, 3), new BigDecimal("100.00"), new BigDecimal("100.50"),
+                        new BigDecimal("99.50"),
+                        new BigDecimal("0.00"), new BigDecimal("0.00"), 1200L),
+                new DailyPrice(LocalDate.of(2026, 10, 4), new BigDecimal("-5.00"), new BigDecimal("-4.00"),
+                        new BigDecimal("-6.00"),
+                        new BigDecimal("-5.00"), new BigDecimal("-5.00"), 1300L),
+                new DailyPrice(LocalDate.of(2026, 10, 5), new BigDecimal("110.00"), new BigDecimal("111.00"),
+                        new BigDecimal("109.00"),
+                        new BigDecimal("110.00"), new BigDecimal("110.00"), 1400L));
+
+        List<NormalizedPricePoint> normalized = symbolPriceService.calculateNormalizedPerformance(prices);
+
+        assertThat(normalized).hasSize(3);
+        assertThat(normalized.getFirst().date()).isEqualTo(LocalDate.of(2026, 10, 1));
+        assertThat(normalized.getFirst().index()).isEqualByComparingTo(new BigDecimal("100.0000000000"));
+        assertThat(normalized.get(1).index()).isEqualByComparingTo(new BigDecimal("101.2500000000"));
+        assertThat(normalized.get(2).index()).isEqualByComparingTo(new BigDecimal("110.0000000000"));
+        assertThat(normalized.getFirst().referenceDate()).isEqualTo(LocalDate.of(2026, 10, 1));
     }
 }
