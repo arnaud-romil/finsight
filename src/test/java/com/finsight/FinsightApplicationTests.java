@@ -1,10 +1,13 @@
 package com.finsight;
 
+import com.finsight.model.SymbolPrice;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
+import java.util.List;
 import javax.sql.DataSource;
 
 import org.junit.jupiter.api.Test;
@@ -35,6 +38,9 @@ class FinsightApplicationTests {
 
         @Autowired
         private SymbolService symbolService;
+
+        @Autowired
+        private com.finsight.repository.SymbolPriceRepository symbolPriceRepository;
 
         @Test
         void contextLoads() {
@@ -210,6 +216,101 @@ class FinsightApplicationTests {
                                 Integer.class);
 
                 assertEquals(2, count);
+        }
+
+        @Test
+        void findsHistoricalPricesForMultipleSymbolsWithinPeriod() {
+                jdbcTemplate.update(
+                                "INSERT INTO symbol_price (symbol_id, price_date, open, high, low, close, adjusted_close, volume) "
+                                                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                                1L,
+                                java.sql.Date.valueOf("2024-01-02"),
+                                new BigDecimal("100.00"),
+                                new BigDecimal("110.00"),
+                                new BigDecimal("99.00"),
+                                new BigDecimal("105.00"),
+                                new BigDecimal("105.00"),
+                                1000L);
+                jdbcTemplate.update(
+                                "INSERT INTO symbol_price (symbol_id, price_date, open, high, low, close, adjusted_close, volume) "
+                                                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                                1L,
+                                java.sql.Date.valueOf("2024-01-04"),
+                                new BigDecimal("101.00"),
+                                new BigDecimal("111.00"),
+                                new BigDecimal("100.00"),
+                                new BigDecimal("106.00"),
+                                new BigDecimal("106.00"),
+                                2000L);
+                jdbcTemplate.update(
+                                "INSERT INTO symbol_price (symbol_id, price_date, open, high, low, close, adjusted_close, volume) "
+                                                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                                2L,
+                                java.sql.Date.valueOf("2024-01-03"),
+                                new BigDecimal("200.00"),
+                                new BigDecimal("210.00"),
+                                new BigDecimal("199.00"),
+                                new BigDecimal("205.00"),
+                                new BigDecimal("205.00"),
+                                3000L);
+                jdbcTemplate.update(
+                                "INSERT INTO symbol_price (symbol_id, price_date, open, high, low, close, adjusted_close, volume) "
+                                                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                                2L,
+                                java.sql.Date.valueOf("2024-01-05"),
+                                new BigDecimal("201.00"),
+                                new BigDecimal("211.00"),
+                                new BigDecimal("200.00"),
+                                new BigDecimal("206.00"),
+                                new BigDecimal("206.00"),
+                                4000L);
+
+                jdbcTemplate.update(
+                                "INSERT INTO symbol_price (symbol_id, price_date, open, high, low, close, adjusted_close, volume) "
+                                                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                                7L,
+                                java.sql.Date.valueOf("2024-01-06"),
+                                new BigDecimal("300.00"),
+                                new BigDecimal("310.00"),
+                                new BigDecimal("299.00"),
+                                new BigDecimal("305.00"),
+                                new BigDecimal("305.00"),
+                                5000L);
+
+                List<SymbolPrice> prices = symbolPriceRepository.findBySymbolIdsAndDateBetween(
+                                List.of(1L, 2L),
+                                LocalDate.of(2024, 1, 2),
+                                LocalDate.of(2024, 1, 5));
+
+                assertEquals(4, prices.size());
+                assertEquals(1L, prices.get(0).symbolId());
+                assertEquals("GOLD", prices.get(0).symbolCode());
+                assertEquals(LocalDate.of(2024, 1, 2), prices.get(0).date());
+                assertEquals(0, prices.get(0).adjustedClose().compareTo(new BigDecimal("105.00000000")));
+                assertEquals(2L, prices.get(2).symbolId());
+                assertEquals("CMSE", prices.get(2).symbolCode());
+                assertEquals(LocalDate.of(2024, 1, 3), prices.get(2).date());
+                assertEquals(0, prices.get(2).adjustedClose().compareTo(new BigDecimal("205.00000000")));
+        }
+
+        @Test
+        void returnsEmptyListWhenSymbolIdsAreEmpty() {
+                List<SymbolPrice> prices = symbolPriceRepository.findBySymbolIdsAndDateBetween(
+                                List.of(),
+                                LocalDate.of(2024, 1, 1),
+                                LocalDate.of(2024, 1, 10));
+
+                assertTrue(prices.isEmpty());
+        }
+
+        @Test
+        void rejectsIncoherentDateRange() {
+                org.junit.jupiter.api.Assertions.assertThrows(
+                                IllegalArgumentException.class,
+                                () -> symbolPriceRepository.findBySymbolIdsAndDateBetween(
+                                                List.of(1L),
+                                                LocalDate.of(2024, 1, 10),
+                                                LocalDate.of(2024, 1, 1)));
         }
 
         @TestConfiguration(proxyBeanMethods = false)
