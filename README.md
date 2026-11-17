@@ -47,6 +47,28 @@ Integration tests use Testcontainers to start an isolated PostgreSQL 17
 container, apply Flyway migrations, and stop the container after the tests.
 Docker must be available; no local PostgreSQL instance or `.env` file is needed.
 
+## Comparer des instruments en base 100
+
+L’application expose une comparaison des cours historiques ajustés sur une période inclusive:
+
+```shell
+curl "http://localhost:8080/api/comparisons/base-100?symbolIds=1,2&from=2026-01-01&to=2026-10-31"
+```
+
+Paramètres:
+
+- `symbolIds`: identifiants internes des instruments, séparés par des virgules (maximum 50).
+- `from`: date de début au format ISO `YYYY-MM-DD`.
+- `to`: date de fin au format ISO `YYYY-MM-DD`, supérieure ou égale à `from`.
+
+Pour chaque instrument, le premier cours disponible dans la période devient la baseline à 100. Les autres valeurs sont calculées avec `adjusted_close`:
+
+```text
+base100 = 100 × coursCourant / coursDeBaseline
+```
+
+Les séries ont une précision de six décimales. Les instruments sans cours ou avec une baseline invalide sont retournés dans `ignoredSymbolIds`. La base 100 ne stocke aucune valeur normalisée; elle est calculée à la lecture. Il n’y a aucune interpolation des jours de cotation ou conversion de devise.
+
 ## Stop PostgreSQL
 
 Stop the service while preserving its data:
