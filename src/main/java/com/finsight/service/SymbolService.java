@@ -17,4 +17,8 @@ public class SymbolService {
     public List<Symbol> findAll() {
         return symbolRepository.findAll();
     }
+
+    public List<Symbol> findByIds(List<Long> ids) {
+        return symbolRepository.findByIds(ids);
+    }
 }
