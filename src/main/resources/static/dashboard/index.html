@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FinSight — Comparaison base 100</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body>
+    <main class="dashboard">
+        <header class="hero">
+            <div>
+                <p class="eyebrow">FinSight</p>
+                <h1>Comparaison des instruments</h1>
+                <p class="subtitle">Évolution normalisée à 100 au premier cours disponible de la période.</p>
+            </div>
+            <button id="reloadButton" class="secondary-button" type="button">Actualiser</button>
+        </header>
+
+        <section class="controls" aria-label="Filtres du dashboard">
+            <div class="control-group symbol-control">
+                <div class="label-row">
+                    <label for="symbolSearch">Instruments</label>
+                    <span id="selectionCount">0 sélectionné</span>
+                </div>
+                <input id="symbolSearch" type="search" placeholder="Rechercher un instrument…" autocomplete="off">
+                <div id="symbolOptions" class="symbol-options" role="listbox" aria-multiselectable="true"></div>
+            </div>
+
+            <div class="control-group">
+                <label for="fromDate">Début</label>
+                <input id="fromDate" type="date" value="2026-01-01">
+            </div>
+
+            <div class="control-group">
+                <label for="toDate">Fin</label>
+                <input id="toDate" type="date" value="2026-10-31">
+            </div>
+
+            <button id="compareButton" class="primary-button" type="button">Comparer</button>
+        </section>
+
+        <div id="status" class="status" role="status" aria-live="polite" hidden></div>
+
+        <section class="chart-card" aria-labelledby="chartTitle">
+            <div class="chart-header">
+                <div>
+                    <p class="eyebrow">Performance relative</p>
+                    <h2 id="chartTitle">Évolution en base 100</h2>
+                </div>
+                <div id="legend" class="legend"></div>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="comparisonChart" role="img" aria-label="Graphique des instruments en base 100"></canvas>
+                <div id="chartEmpty" class="chart-empty" hidden>Sélectionnez au moins un instrument pour afficher le
+                    graphique.</div>
+            </div>
+            <div id="ignoredSymbols" class="ignored" hidden></div>
+        </section>
+
+        <section class="summary-card" aria-labelledby="summaryTitle">
+            <h2 id="summaryTitle">Récapitulatif</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Instrument</th>
+                            <th>Devise</th>
+                            <th>Baseline</th>
+                            <th>Premier point</th>
+                            <th>Dernier point</th>
+                            <th>Variation</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryBody">
+                        <tr>
+                            <td colspan="6" class="muted">Aucune donnée chargée.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <p class="notice">
+            Les devises ne sont pas converties. Les instruments sont normalisés séparément et les jours sans cotation ne
+            sont pas interpolés.
+        </p>
+    </main>
+    <script src="./dashboard.js" defer></script>
+</body>
+
+</html>

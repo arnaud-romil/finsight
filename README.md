@@ -69,6 +69,24 @@ base100 = 100 × coursCourant / coursDeBaseline
 
 Les séries ont une précision de six décimales. Les instruments sans cours ou avec une baseline invalide sont retournés dans `ignoredSymbolIds`. La base 100 ne stocke aucune valeur normalisée; elle est calculée à la lecture. Il n’y a aucune interpolation des jours de cotation ou conversion de devise.
 
+## Dashboard base 100
+
+Une fois l’application démarrée sur `localhost:8080`, ouvrir:
+
+```text
+http://localhost:8080/dashboard/
+```
+
+Le dashboard permet de:
+
+- rechercher et sélectionner jusqu’à 50 instruments;
+- choisir une période inclusive;
+- afficher une courbe base 100 par instrument;
+- consulter les tooltips, les instruments ignorés et un tableau récapitulatif;
+- activer ou masquer chaque série depuis la légende.
+
+Chaque instrument est normalisé indépendamment à 100 à son premier cours disponible dans la période. Les devises ne sont pas converties et les jours de cotation manquants ne sont pas interpolés.
+
 ## Stop PostgreSQL
 
 Stop the service while preserving its data:
