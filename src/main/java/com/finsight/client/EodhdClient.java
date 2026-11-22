@@ -22,14 +22,14 @@ public class EodhdClient {
         this.apiToken = apiToken == null ? "" : apiToken;
     }
 
-    public List<EodhdDailyPriceResponse> getDailyPrices(Symbol symbol, LocalDate from) {
+    public List<EodhdDailyPriceResponse> getDailyPrices(Symbol symbol, LocalDate from, LocalDate to) {
         if (symbol == null) {
             throw new IllegalArgumentException("symbol must not be null");
         }
-        return getDailyPrices(symbol.code(), symbol.exchange(), from);
+        return getDailyPrices(symbol.code(), symbol.exchange(), from, to);
     }
 
-    public List<EodhdDailyPriceResponse> getDailyPrices(String code, String exchange, LocalDate from) {
+    public List<EodhdDailyPriceResponse> getDailyPrices(String code, String exchange, LocalDate from, LocalDate to) {
         if (code == null || code.isBlank()) {
             throw new IllegalArgumentException("code must not be blank");
         }
@@ -38,6 +38,12 @@ public class EodhdClient {
         }
         if (from == null) {
             throw new IllegalArgumentException("from date must not be null");
+        }
+        if (to == null) {
+            throw new IllegalArgumentException("to date must not be null");
+        }
+        if (from.isAfter(to)) {
+            throw new IllegalArgumentException("from date must be before or equal to to date");
         }
 
         String symbol = code + "." + exchange;
@@ -52,6 +58,7 @@ public class EodhdClient {
                             .path("/eod/{symbol}")
                             .queryParam("api_token", apiToken)
                             .queryParam("from", from)
+                            .queryParam("to", to)
                             .queryParam("period", "d")
                             .queryParam("fmt", "json")
                             .build(symbol))

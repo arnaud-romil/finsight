@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,14 +44,22 @@ class SymbolPriceImportServiceTest {
     @BeforeEach
     void setUp() {
         clock = Clock.fixed(Instant.parse("2026-11-15T12:00:00Z"), ZoneId.of("UTC"));
-        service = new SymbolPriceImportService(symbolService, symbolPriceService, symbolPriceRepository, clock);
+        service = new SymbolPriceImportService(
+                symbolService,
+                symbolPriceService,
+                symbolPriceRepository,
+                clock,
+                "2000-01-01");
+        when(symbolPriceRepository.findLatestDateBySymbolId(org.mockito.ArgumentMatchers.anyLong()))
+                .thenReturn(Optional.empty());
     }
 
     @Test
     void importDailyPricesImportsAllPricesForEachSymbol() {
         Symbol gold = new Symbol(1L, "GOLD", "Gold", "France", "PA", "EUR", "commodity", "FR0000000001");
         Symbol apple = new Symbol(2L, "AAPL", "Apple", "United States", "NASDAQ", "USD", "stock", "US0378331005");
-        LocalDate from = LocalDate.of(2026, 11, 15);
+        LocalDate initialDate = LocalDate.of(2000, 1, 1);
+        LocalDate to = LocalDate.of(2026, 11, 15);
 
         DailyPrice goldPrice1 = new DailyPrice(LocalDate.of(2026, 11, 15), new BigDecimal("138.11"),
                 new BigDecimal("140.35"), new BigDecimal("137.49"), new BigDecimal("140.35"), new BigDecimal("140.35"),
@@ -63,13 +72,13 @@ class SymbolPriceImportServiceTest {
                 120000L);
 
         when(symbolService.findAll()).thenReturn(List.of(gold, apple));
-        when(symbolPriceService.getPriceHistory(gold, from)).thenReturn(List.of(goldPrice1, goldPrice2));
-        when(symbolPriceService.getPriceHistory(apple, from)).thenReturn(List.of(applePrice));
+        when(symbolPriceService.getPriceHistory(gold, initialDate, to)).thenReturn(List.of(goldPrice1, goldPrice2));
+        when(symbolPriceService.getPriceHistory(apple, initialDate, to)).thenReturn(List.of(applePrice));
 
         service.importDailyPrices();
 
-        verify(symbolPriceService).getPriceHistory(gold, from);
-        verify(symbolPriceService).getPriceHistory(apple, from);
+        verify(symbolPriceService).getPriceHistory(gold, initialDate, to);
+        verify(symbolPriceService).getPriceHistory(apple, initialDate, to);
         verify(symbolPriceRepository).save(gold.id(), goldPrice1);
         verify(symbolPriceRepository).save(gold.id(), goldPrice2);
         verify(symbolPriceRepository).save(apple.id(), applePrice);
@@ -78,14 +87,15 @@ class SymbolPriceImportServiceTest {
     @Test
     void importDailyPricesSkipsSymbolsWithoutPrices() {
         Symbol symbol = new Symbol(10L, "MSFT", "Microsoft", "United States", "NASDAQ", "USD", "stock", "US5949181045");
-        LocalDate from = LocalDate.of(2026, 11, 15);
+        LocalDate initialDate = LocalDate.of(2000, 1, 1);
+        LocalDate to = LocalDate.of(2026, 11, 15);
 
         when(symbolService.findAll()).thenReturn(List.of(symbol));
-        when(symbolPriceService.getPriceHistory(symbol, from)).thenReturn(List.of());
+        when(symbolPriceService.getPriceHistory(symbol, initialDate, to)).thenReturn(List.of());
 
         service.importDailyPrices();
 
-        verify(symbolPriceService).getPriceHistory(symbol, from);
+        verify(symbolPriceService).getPriceHistory(symbol, initialDate, to);
         verify(symbolPriceRepository, never()).save(org.mockito.ArgumentMatchers.anyLong(),
                 org.mockito.ArgumentMatchers.any());
     }
@@ -93,7 +103,8 @@ class SymbolPriceImportServiceTest {
     @Test
     void importDailyPricesContinuesAfterDuplicateKey() {
         Symbol symbol = new Symbol(3L, "GLD", "Gold ETF", "United States", "NYSEARCA", "USD", "etf", "US38259P5089");
-        LocalDate from = LocalDate.of(2026, 11, 15);
+        LocalDate initialDate = LocalDate.of(2000, 1, 1);
+        LocalDate to = LocalDate.of(2026, 11, 15);
 
         DailyPrice first = new DailyPrice(LocalDate.of(2026, 11, 15), new BigDecimal("180.00"),
                 new BigDecimal("181.00"), new BigDecimal("179.00"), new BigDecimal("180.50"), new BigDecimal("180.50"),
@@ -103,7 +114,7 @@ class SymbolPriceImportServiceTest {
                 2000L);
 
         when(symbolService.findAll()).thenReturn(List.of(symbol));
-        when(symbolPriceService.getPriceHistory(symbol, from)).thenReturn(List.of(first, second));
+        when(symbolPriceService.getPriceHistory(symbol, initialDate, to)).thenReturn(List.of(first, second));
         doThrow(new DuplicateKeyException("dup")).when(symbolPriceRepository).save(symbol.id(), first);
 
         assertThatCode(() -> service.importDailyPrices()).doesNotThrowAnyException();
@@ -117,15 +128,17 @@ class SymbolPriceImportServiceTest {
         Symbol okSymbol = new Symbol(4L, "NVDA", "NVIDIA", "United States", "NASDAQ", "USD", "stock", "US67066G1040");
         Symbol failingSymbol = new Symbol(5L, "META", "Meta", "United States", "NASDAQ", "USD", "stock",
                 "US30303M1027");
-        LocalDate from = LocalDate.of(2026, 11, 15);
+        LocalDate initialDate = LocalDate.of(2000, 1, 1);
+        LocalDate to = LocalDate.of(2026, 11, 15);
 
         DailyPrice price = new DailyPrice(LocalDate.of(2026, 11, 15), new BigDecimal("200.00"),
                 new BigDecimal("205.00"), new BigDecimal("198.00"), new BigDecimal("201.50"), new BigDecimal("201.50"),
                 123L);
 
         when(symbolService.findAll()).thenReturn(List.of(okSymbol, failingSymbol));
-        when(symbolPriceService.getPriceHistory(okSymbol, from)).thenReturn(List.of(price));
-        when(symbolPriceService.getPriceHistory(failingSymbol, from)).thenThrow(new RuntimeException("api failure"));
+        when(symbolPriceService.getPriceHistory(okSymbol, initialDate, to)).thenReturn(List.of(price));
+        when(symbolPriceService.getPriceHistory(failingSymbol, initialDate, to))
+                .thenThrow(new RuntimeException("api failure"));
 
         assertThatCode(() -> service.importDailyPrices()).doesNotThrowAnyException();
 
@@ -133,16 +146,54 @@ class SymbolPriceImportServiceTest {
     }
 
     @Test
-    void importDailyPricesUsesClockDateForApiCalls() {
+    void importDailyPricesUsesConfiguredInitialDateAndClockDate() {
         Symbol symbol = new Symbol(6L, "IBM", "IBM", "United States", "NYSE", "USD", "stock", "US4592001014");
-        LocalDate expectedFrom = LocalDate.of(2026, 11, 15);
+        LocalDate initialDate = LocalDate.of(2000, 1, 1);
+        LocalDate to = LocalDate.of(2026, 11, 15);
 
         when(symbolService.findAll()).thenReturn(List.of(symbol));
-        when(symbolPriceService.getPriceHistory(symbol, expectedFrom)).thenReturn(List.of());
+        when(symbolPriceService.getPriceHistory(symbol, initialDate, to)).thenReturn(List.of());
 
         service.importDailyPrices();
 
-        verify(symbolPriceService).getPriceHistory(symbol, expectedFrom);
+        verify(symbolPriceService).getPriceHistory(symbol, initialDate, to);
+    }
+
+    @Test
+    void importDailyPricesStartsAfterLatestStoredDate() {
+        Symbol symbol = new Symbol(7L, "MSFT", "Microsoft", "United States", "NASDAQ", "USD", "stock", "US5949181045");
+
+        when(symbolService.findAll()).thenReturn(List.of(symbol));
+        when(symbolPriceRepository.findLatestDateBySymbolId(symbol.id()))
+                .thenReturn(Optional.of(LocalDate.of(2026, 11, 10)));
+        when(symbolPriceService.getPriceHistory(
+                symbol,
+                LocalDate.of(2026, 11, 11),
+                LocalDate.of(2026, 11, 15)))
+                .thenReturn(List.of());
+
+        service.importDailyPrices();
+
+        verify(symbolPriceService).getPriceHistory(
+                symbol,
+                LocalDate.of(2026, 11, 11),
+                LocalDate.of(2026, 11, 15));
+    }
+
+    @Test
+    void importDailyPricesSkipsSymbolAlreadyAtToday() {
+        Symbol symbol = new Symbol(8L, "IBM", "IBM", "United States", "NYSE", "USD", "stock", "US4592001014");
+
+        when(symbolService.findAll()).thenReturn(List.of(symbol));
+        when(symbolPriceRepository.findLatestDateBySymbolId(symbol.id()))
+                .thenReturn(Optional.of(LocalDate.of(2026, 11, 15)));
+
+        service.importDailyPrices();
+
+        verify(symbolPriceService, never()).getPriceHistory(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any());
     }
 }
 
