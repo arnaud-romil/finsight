@@ -30,6 +30,7 @@ class SymbolPriceServiceTest {
     void getPriceHistoryMapsApiResponsesToDailyPrices() {
         Symbol symbol = new Symbol(1L, "GOLD", "Gold", "France", "PA", "EUR", "commodity", "FR0000000001");
         LocalDate from = LocalDate.of(2026, 10, 1);
+        LocalDate to = LocalDate.of(2026, 11, 15);
 
         EodhdDailyPriceResponse response = new EodhdDailyPriceResponse(
                 LocalDate.of(2026, 11, 2),
@@ -40,28 +41,29 @@ class SymbolPriceServiceTest {
                 new BigDecimal("140.35"),
                 35499L);
 
-        when(eodhdClient.getDailyPrices(symbol, from)).thenReturn(List.of(response));
+        when(eodhdClient.getDailyPrices(symbol, from, to)).thenReturn(List.of(response));
 
-        List<DailyPrice> prices = symbolPriceService.getPriceHistory(symbol, from);
+        List<DailyPrice> prices = symbolPriceService.getPriceHistory(symbol, from, to);
 
         assertThat(prices).hasSize(1);
         assertThat(prices.getFirst().date()).isEqualTo(LocalDate.of(2026, 11, 2));
         assertThat(prices.getFirst().close()).isEqualByComparingTo("140.35");
         assertThat(prices.getFirst().adjustedClose()).isEqualByComparingTo("140.35");
         assertThat(prices.getFirst().volume()).isEqualTo(35499L);
-        verify(eodhdClient).getDailyPrices(symbol, from);
+        verify(eodhdClient).getDailyPrices(symbol, from, to);
     }
 
     @Test
     void getPriceHistoryReturnsEmptyListWhenApiReturnsNoData() {
         Symbol symbol = new Symbol(2L, "AAPL", "Apple", "United States", "NASDAQ", "USD", "stock", "US0378331005");
         LocalDate from = LocalDate.of(2026, 10, 1);
+        LocalDate to = LocalDate.of(2026, 11, 15);
 
-        when(eodhdClient.getDailyPrices(symbol, from)).thenReturn(List.of());
+        when(eodhdClient.getDailyPrices(symbol, from, to)).thenReturn(List.of());
 
-        List<DailyPrice> prices = symbolPriceService.getPriceHistory(symbol, from);
+        List<DailyPrice> prices = symbolPriceService.getPriceHistory(symbol, from, to);
 
         assertThat(prices).isEmpty();
-        verify(eodhdClient).getDailyPrices(symbol, from);
+        verify(eodhdClient).getDailyPrices(symbol, from, to);
     }
 }

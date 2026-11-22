@@ -17,15 +17,21 @@ public class SymbolPriceService {
         this.eodhdClient = eodhdClient;
     }
 
-    public List<DailyPrice> getPriceHistory(Symbol symbol, LocalDate from) {
+    public List<DailyPrice> getPriceHistory(Symbol symbol, LocalDate from, LocalDate to) {
         if (symbol == null) {
             throw new IllegalArgumentException("symbol must not be null");
         }
         if (from == null) {
             throw new IllegalArgumentException("from date must not be null");
         }
+        if (to == null) {
+            throw new IllegalArgumentException("to date must not be null");
+        }
+        if (from.isAfter(to)) {
+            throw new IllegalArgumentException("from date must be before or equal to to date");
+        }
 
-        List<EodhdDailyPriceResponse> responses = eodhdClient.getDailyPrices(symbol, from);
+        List<EodhdDailyPriceResponse> responses = eodhdClient.getDailyPrices(symbol, from, to);
         if (responses == null || responses.isEmpty()) {
             return List.of();
         }
