@@ -49,7 +49,7 @@ class SymbolPriceImportServiceTest {
                 symbolPriceService,
                 symbolPriceRepository,
                 clock,
-                "2000-01-01");
+                "2026-01-01");
         when(symbolPriceRepository.findLatestDateBySymbolId(org.mockito.ArgumentMatchers.anyLong()))
                 .thenReturn(Optional.empty());
     }
@@ -58,7 +58,7 @@ class SymbolPriceImportServiceTest {
     void importDailyPricesImportsAllPricesForEachSymbol() {
         Symbol gold = new Symbol(1L, "GOLD", "Gold", "France", "PA", "EUR", "commodity", "FR0000000001");
         Symbol apple = new Symbol(2L, "AAPL", "Apple", "United States", "NASDAQ", "USD", "stock", "US0378331005");
-        LocalDate initialDate = LocalDate.of(2000, 1, 1);
+        LocalDate initialDate = LocalDate.of(2026, 1, 1);
         LocalDate to = LocalDate.of(2026, 11, 15);
 
         DailyPrice goldPrice1 = new DailyPrice(LocalDate.of(2026, 11, 15), new BigDecimal("138.11"),
@@ -87,7 +87,7 @@ class SymbolPriceImportServiceTest {
     @Test
     void importDailyPricesSkipsSymbolsWithoutPrices() {
         Symbol symbol = new Symbol(10L, "MSFT", "Microsoft", "United States", "NASDAQ", "USD", "stock", "US5949181045");
-        LocalDate initialDate = LocalDate.of(2000, 1, 1);
+        LocalDate initialDate = LocalDate.of(2026, 1, 1);
         LocalDate to = LocalDate.of(2026, 11, 15);
 
         when(symbolService.findAll()).thenReturn(List.of(symbol));
@@ -103,7 +103,7 @@ class SymbolPriceImportServiceTest {
     @Test
     void importDailyPricesContinuesAfterDuplicateKey() {
         Symbol symbol = new Symbol(3L, "GLD", "Gold ETF", "United States", "NYSEARCA", "USD", "etf", "US38259P5089");
-        LocalDate initialDate = LocalDate.of(2000, 1, 1);
+        LocalDate initialDate = LocalDate.of(2026, 1, 1);
         LocalDate to = LocalDate.of(2026, 11, 15);
 
         DailyPrice first = new DailyPrice(LocalDate.of(2026, 11, 15), new BigDecimal("180.00"),
@@ -128,7 +128,7 @@ class SymbolPriceImportServiceTest {
         Symbol okSymbol = new Symbol(4L, "NVDA", "NVIDIA", "United States", "NASDAQ", "USD", "stock", "US67066G1040");
         Symbol failingSymbol = new Symbol(5L, "META", "Meta", "United States", "NASDAQ", "USD", "stock",
                 "US30303M1027");
-        LocalDate initialDate = LocalDate.of(2000, 1, 1);
+        LocalDate initialDate = LocalDate.of(2026, 1, 1);
         LocalDate to = LocalDate.of(2026, 11, 15);
 
         DailyPrice price = new DailyPrice(LocalDate.of(2026, 11, 15), new BigDecimal("200.00"),
@@ -148,7 +148,7 @@ class SymbolPriceImportServiceTest {
     @Test
     void importDailyPricesUsesConfiguredInitialDateAndClockDate() {
         Symbol symbol = new Symbol(6L, "IBM", "IBM", "United States", "NYSE", "USD", "stock", "US4592001014");
-        LocalDate initialDate = LocalDate.of(2000, 1, 1);
+        LocalDate initialDate = LocalDate.of(2026, 1, 1);
         LocalDate to = LocalDate.of(2026, 11, 15);
 
         when(symbolService.findAll()).thenReturn(List.of(symbol));

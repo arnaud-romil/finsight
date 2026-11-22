@@ -29,7 +29,7 @@ public class SymbolPriceImportService {
             SymbolPriceService symbolPriceService,
             SymbolPriceRepository symbolPriceRepository,
             Clock clock,
-            @Value("${eodhd.import.initial-date:2000-01-01}") String initialImportDate) {
+            @Value("${eodhd.import.initial-date:2026-01-01}") String initialImportDate) {
         this.symbolService = symbolService;
         this.symbolPriceService = symbolPriceService;
         this.symbolPriceRepository = symbolPriceRepository;
