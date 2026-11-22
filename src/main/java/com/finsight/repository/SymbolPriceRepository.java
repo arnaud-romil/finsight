@@ -72,33 +72,6 @@ public class SymbolPriceRepository {
                 params.toArray());
     }
 
-    public LocalDate findMostRecentDateBySymbolId(Long symbolId) {
-        String sql = "SELECT MAX(price_date) FROM symbol_price WHERE symbol_id = ?";
-
-        return jdbcTemplate.queryForObject(sql, LocalDate.class, symbolId);
-    }
-
-    public Optional<SymbolPrice> findMostRecentPriceBySymbolId(Long symbolId) {
-        String sql = "SELECT sp.symbol_id, s.code AS symbol_code, sp.price_date, sp.adjusted_close "
-                + "FROM symbol_price sp "
-                + "JOIN symbol s ON s.id = sp.symbol_id "
-                + "WHERE sp.symbol_id = ? "
-                + "AND sp.price_date = (SELECT MAX(price_date) FROM symbol_price WHERE symbol_id = ?) "
-                + "ORDER BY sp.price_date DESC "
-                + "LIMIT 1";
-
-        List<SymbolPrice> results = jdbcTemplate.query(
-                sql,
-                (rs, rowNum) -> new SymbolPrice(
-                        rs.getLong("symbol_id"),
-                        rs.getString("symbol_code"),
-                        rs.getObject("price_date", LocalDate.class),
-                        rs.getBigDecimal("adjusted_close")),
-                symbolId, symbolId);
-
-        return results.stream().findFirst();
-    }
-
     public Optional<LocalDate> findLatestDateBySymbolId(Long symbolId) {
         if (symbolId == null) {
             throw new IllegalArgumentException("symbolId must not be null");
