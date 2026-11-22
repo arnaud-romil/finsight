@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
@@ -40,7 +41,7 @@ public class Base100ComparisonService {
         if (symbolIds.size() > MAX_SYMBOLS) {
             throw new IllegalArgumentException("A maximum of " + MAX_SYMBOLS + " symbols is allowed");
         }
-        if (symbolIds.stream().anyMatch(id -> id == null)) {
+        if (symbolIds.stream().anyMatch(Objects::isNull)) {
             throw new IllegalArgumentException("symbolIds must not contain null values");
         }
         if (from == null || to == null) {
