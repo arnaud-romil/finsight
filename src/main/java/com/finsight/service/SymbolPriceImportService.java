@@ -54,7 +54,7 @@ public class SymbolPriceImportService {
                     try {
                         symbolPriceRepository.save(symbol.id(), price);
                         log.info("Cours enregistré pour le symbole {} à la date {}.", symbol.code(), price.date());
-                    } catch (DuplicateKeyException ex) {
+                    } catch (DuplicateKeyException _) {
                         log.info(
                                 "Cours déjà présent pour le symbole {} à la date {}. Insertion ignorée.",
                                 symbol.code(),
