@@ -11,22 +11,24 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 @RestControllerAdvice
 public class ComparisonExceptionHandler {
 
+    private static final String ERROR_KEY = "error";
+
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleIllegalArgument(IllegalArgumentException exception) {
-        return Map.of("error", exception.getMessage());
+        return Map.of(ERROR_KEY, exception.getMessage());
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleMissingParameter(MissingServletRequestParameterException exception) {
-        return Map.of("error", "Missing required parameter: " + exception.getParameterName());
+        return Map.of(ERROR_KEY, "Missing required parameter: " + exception.getParameterName());
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleTypeMismatch(MethodArgumentTypeMismatchException exception) {
-        return Map.of("error", "Invalid value for parameter: " + exception.getName() + ". Expected type: "
+        return Map.of(ERROR_KEY, "Invalid value for parameter: " + exception.getName() + ". Expected type: "
                 + exception.getRequiredType().getSimpleName());
     }
 }

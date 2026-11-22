@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
@@ -34,21 +35,7 @@ public class Base100ComparisonService {
     }
 
     public Base100ComparisonResponse compare(List<Long> symbolIds, LocalDate from, LocalDate to) {
-        if (symbolIds == null || symbolIds.isEmpty()) {
-            throw new IllegalArgumentException("symbolIds must not be empty");
-        }
-        if (symbolIds.size() > MAX_SYMBOLS) {
-            throw new IllegalArgumentException("A maximum of " + MAX_SYMBOLS + " symbols is allowed");
-        }
-        if (symbolIds.stream().anyMatch(id -> id == null)) {
-            throw new IllegalArgumentException("symbolIds must not contain null values");
-        }
-        if (from == null || to == null) {
-            throw new IllegalArgumentException("from and to dates must not be null");
-        }
-        if (from.isAfter(to)) {
-            throw new IllegalArgumentException("from date must be before or equal to to date");
-        }
+        validateParameters(symbolIds, from, to);
 
         List<Long> distinctIds = symbolIds.stream().distinct().toList();
         List<Symbol> symbols = symbolService.findByIds(distinctIds);
@@ -110,6 +97,24 @@ public class Base100ComparisonService {
         }
 
         return new Base100ComparisonResponse(from, to, series, ignoredSymbolIds);
+    }
+
+    private void validateParameters(List<Long> symbolIds, LocalDate from, LocalDate to) {
+        if (symbolIds == null || symbolIds.isEmpty()) {
+            throw new IllegalArgumentException("symbolIds must not be empty");
+        }
+        if (symbolIds.size() > MAX_SYMBOLS) {
+            throw new IllegalArgumentException("A maximum of " + MAX_SYMBOLS + " symbols is allowed");
+        }
+        if (symbolIds.stream().anyMatch(Objects::isNull)) {
+            throw new IllegalArgumentException("symbolIds must not contain null values");
+        }
+        if (from == null || to == null) {
+            throw new IllegalArgumentException("from and to dates must not be null");
+        }
+        if (from.isAfter(to)) {
+            throw new IllegalArgumentException("from date must be before or equal to to date");
+        }
     }
 
     private BigDecimal calculateBase100(BigDecimal current, BigDecimal baseline) {

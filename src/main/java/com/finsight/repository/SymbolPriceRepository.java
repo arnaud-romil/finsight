@@ -2,7 +2,6 @@ package com.finsight.repository;
 
 import com.finsight.model.DailyPrice;
 import com.finsight.model.SymbolPrice;
-import java.sql.Date;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,15 +58,15 @@ public class SymbolPriceRepository {
 
         List<Object> params = new ArrayList<>();
         params.addAll(symbolIds);
-        params.add(Date.valueOf(startDate));
-        params.add(Date.valueOf(endDate));
+        params.add(startDate);
+        params.add(endDate);
 
         return jdbcTemplate.query(
                 sql,
                 (rs, rowNum) -> new SymbolPrice(
                         rs.getLong("symbol_id"),
                         rs.getString("symbol_code"),
-                        rs.getDate("price_date").toLocalDate(),
+                        rs.getObject("price_date", LocalDate.class),
                         rs.getBigDecimal("adjusted_close")),
                 params.toArray());
     }

@@ -51,21 +51,7 @@ public class SymbolPriceImportService {
                 log.info("{} cours reçus pour le symbole {}.", prices.size(), symbol.code());
 
                 for (DailyPrice price : prices) {
-                    try {
-                        symbolPriceRepository.save(symbol.id(), price);
-                        log.info("Cours enregistré pour le symbole {} à la date {}.", symbol.code(), price.date());
-                    } catch (DuplicateKeyException ex) {
-                        log.info(
-                                "Cours déjà présent pour le symbole {} à la date {}. Insertion ignorée.",
-                                symbol.code(),
-                                price.date());
-                    } catch (RuntimeException ex) {
-                        log.error(
-                                "Erreur lors de l'enregistrement du cours du symbole {} à la date {}.",
-                                symbol.code(),
-                                price.date(),
-                                ex);
-                    }
+                    savePrice(symbol, price);
                 }
             } catch (RuntimeException ex) {
                 log.error("Erreur lors de la récupération des cours pour le symbole {}.", symbol.code(), ex);
@@ -73,5 +59,23 @@ public class SymbolPriceImportService {
         }
 
         log.info("Fin de l'importation quotidienne.");
+    }
+
+    private void savePrice(Symbol symbol, DailyPrice price) {
+        try {
+            symbolPriceRepository.save(symbol.id(), price);
+            log.info("Cours enregistré pour le symbole {} à la date {}.", symbol.code(), price.date());
+        } catch (DuplicateKeyException _) {
+            log.info(
+                    "Cours déjà présent pour le symbole {} à la date {}. Insertion ignorée.",
+                    symbol.code(),
+                    price.date());
+        } catch (RuntimeException ex) {
+            log.error(
+                    "Erreur lors de l'enregistrement du cours du symbole {} à la date {}.",
+                    symbol.code(),
+                    price.date(),
+                    ex);
+        }
     }
 }
